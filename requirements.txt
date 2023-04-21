@@ -11,3 +11,4 @@ pandas
 matplotlib
 numpy
 dvc
+"dvc[drive]"
