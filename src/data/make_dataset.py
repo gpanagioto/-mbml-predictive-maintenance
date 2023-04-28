@@ -3,7 +3,7 @@ import click
 import logging
 from pathlib import Path
 from dotenv import find_dotenv, load_dotenv
-
+import os
 import numpy as np
 import pandas as pd
 from datetime import date
@@ -16,11 +16,12 @@ def main(input_filepath, output_filepath):
     """ Runs data processing scripts to turn raw data from (../raw) into
         cleaned data ready to be analyzed (saved in ../processed).
     """
+
     logger = logging.getLogger(__name__)
     logger.info('making final data set from raw data')
 
 
-        # load data from csv
+    # load data from csv
     telemetry = pd.read_csv(input_filepath+'/'+'telemetry.csv')
 
     # format datetime field which comes in as string
@@ -91,9 +92,11 @@ def main(input_filepath, output_filepath):
     labeled_features['comp3_fail'] = (labeled_features['failure'] == 'comp3').astype(int)
     labeled_features['comp4_fail'] = (labeled_features['failure'] == 'comp4').astype(int)
 
+    
+    if not os.path.exists(output_filepath):
+        os.makedirs(output_filepath)
+    
     labeled_features.to_csv(output_filepath+'/'+'data_processed.csv')
-
-
 
 
 if __name__ == '__main__':
