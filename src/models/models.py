@@ -3,8 +3,6 @@ from sklearn.model_selection import train_test_split
 import torch
 import pyro
 import pyro.distributions as dist
-#from pyro.optim import Adam, ClippedAdam
-
 
 
 def model(X, obs=None):
