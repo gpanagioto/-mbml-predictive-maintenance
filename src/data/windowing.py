@@ -130,10 +130,17 @@ def create_windowed_df(
     return final_df
 
 
-DATA_PATH = Path.cwd() / ".." / ".." / "data" / "processed" / "data_processed.csv"
-TELEMETRY_COLUMNS = ["voltmean_3h", "rotatemean_3h"]
-TARGET_COLUMNS = ["comp1_life"]
 
-data = pd.read_csv(DATA_PATH.as_posix())
+def main():
 
-tst_df = create_windowed_df(data, "machineID", TELEMETRY_COLUMNS, TARGET_COLUMNS, 2, 1)
+    DATA_PATH = Path.cwd() / ".." / ".." / "data" / "processed" / "data_processed.csv"
+    TELEMETRY_COLUMNS = ["voltmean_3h", "rotatemean_3h"]
+    TARGET_COLUMNS = ["comp1_life"]
+
+    data = pd.read_csv(DATA_PATH.as_posix())
+
+    tst_df = create_windowed_df(data, "machineID", TELEMETRY_COLUMNS, TARGET_COLUMNS, 2, 1)
+
+
+if __name__=='__main__':
+    main()
