@@ -1,6 +1,8 @@
 import pyro
 import torch
 import pyro.distributions as dist
+from pyro.nn import PyroModule, PyroSample
+import torch.nn as nn
 
 def linear_model(X, obs=None):
         
@@ -39,3 +41,70 @@ def heteroscedastic_model(X, obs=None):
         y = pyro.sample("y", dist.Normal(alpha_mu + X.matmul(beta_mu), torch.exp(alpha_v + X.matmul(beta_v))), obs=obs)
         
     return y
+
+
+
+class FFNN(PyroModule):
+    def __init__(self, n_in, n_hidden, n_out):
+        super(FFNN, self).__init__()
+        
+        # Architecture
+        self.in_layer = PyroModule[nn.Linear](n_in, n_hidden)
+        self.in_layer.weight = PyroSample(dist.Normal(0., 1.).expand([n_hidden, n_in]).to_event(2))
+
+        self.h_layer = PyroModule[nn.Linear](n_hidden, n_hidden)
+        self.h_layer.weight = PyroSample(dist.Normal(0., 1.).expand([n_hidden, n_hidden]).to_event(2))
+
+        self.h_layer = PyroModule[nn.Linear](n_hidden, n_hidden)
+        self.h_layer.weight = PyroSample(dist.Normal(0., 1.).expand([n_hidden, n_hidden]).to_event(2))
+
+        self.out_layer = PyroModule[nn.Linear](n_hidden, n_out)
+        self.out_layer.weight = PyroSample(dist.Normal(0., 1.).expand([n_out, n_hidden]).to_event(2))
+
+        # Activation functions
+        self.tanh = nn.Tanh()
+        
+    def forward(self, X, y=None):
+        X = self.tanh(self.in_layer(X))
+        X = self.tanh(self.h_layer(X))
+        X = self.out_layer(X)
+        prediction_mean = X.squeeze(-1)
+        with pyro.plate("observations"):
+            y = pyro.sample("obs", dist.Normal(prediction_mean, 0.1), obs=y)
+            
+        return y
+    
+class FFNN_interpretable(PyroModule):
+    def __init__(self, n_in, n_hidden, n_out):
+        super(FFNN_interpretable, self).__init__()
+        
+        # Architecture
+        self.in_layer = PyroModule[nn.Linear](n_in, n_hidden)
+        self.in_layer.weight = PyroSample(dist.Normal(0., 1.).expand([n_hidden, n_in]).to_event(2))
+
+        self.h_layer = PyroModule[nn.Linear](n_hidden, n_hidden)
+        self.h_layer.weight = PyroSample(dist.Normal(0., 1.).expand([n_hidden, n_hidden]).to_event(2))
+
+        self.h_layer = PyroModule[nn.Linear](n_hidden, n_hidden)
+        self.h_layer.weight = PyroSample(dist.Normal(0., 1.).expand([n_hidden, n_hidden]).to_event(2))
+
+        self.out_layer = PyroModule[nn.Linear](n_hidden, n_out)
+        self.out_layer.weight = PyroSample(dist.Normal(0., 1.).expand([n_out, n_hidden]).to_event(2))
+
+        # Activation functions
+        self.tanh = nn.Tanh()
+        
+    def forward(self, X, y=None):
+        X_nn = X[:,1:]
+        X_nn = self.tanh(self.in_layer(X_nn))
+        X_nn = self.tanh(self.h_layer(X_nn))
+        X_nn = self.out_layer(X_nn)
+        nn_out = X_nn.squeeze(-1)
+
+        beta_lin = pyro.sample("beta", dist.Normal(0, 1))
+        X_linear = X[:,0]
+        with pyro.plate("observations"):
+            linear_out = X_linear*beta_lin
+            y = pyro.sample("obs", dist.Normal(nn_out+linear_out, 0.1), obs=y)
+            
+        return y
