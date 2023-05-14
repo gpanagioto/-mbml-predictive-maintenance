@@ -3,9 +3,15 @@ from pyro.contrib.autoguide import AutoDiagonalNormal, AutoMultivariateNormal
 import pyro
 from pyro.optim import Adam, ClippedAdam
 from pyro.infer import MCMC, NUTS, HMC, SVI, Trace_ELBO
+from src.models.models import FFNN_interpretable as modelFFNN_interpretable
+from src.models.models import FFNN as modelFFNN
+from pyro.infer import Predictive
 
 def train_nn(model0, X_train_torch, y_train_torch):
-    model = model0(n_in=X_train_torch.shape[1], n_hidden=32, n_out=1)
+    if model0 == modelFFNN:
+        model = model0(n_in=X_train_torch.shape[1], n_hidden=32, n_out=1)
+    elif model0 == modelFFNN_interpretable:
+        model = model0(n_in=X_train_torch.shape[1]-1, n_hidden=32, n_out=1)
     guide = AutoDiagonalNormal(model)
     pyro.clear_param_store()
     # Define the number of optimization steps
@@ -25,3 +31,5 @@ def train_nn(model0, X_train_torch, y_train_torch):
         if step % 500 == 0:
             print("[%d] ELBO: %.1f" % (step, elbo))
     return model,guide
+
+
