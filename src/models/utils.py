@@ -30,7 +30,7 @@ def get_data_for_component(data, component):
     return data[cols]
 
 
-def preprocess(X_init,test_size):
+def preprocess(X_init,test_size,classi=False):
 
         X_init = X_init.to_numpy()
 
@@ -53,6 +53,10 @@ def preprocess(X_init,test_size):
 
         X_train_torch = torch.tensor(X_train).float()
         y_train_torch = torch.tensor(y_train).float()
+        if classi:
+            y_train_torch = torch.tensor(y_train_unsc).float()
+            y_train = y_train_unsc
+            y_test = y_test_unsc
         X_test_torch = torch.tensor(X_test).float()
 
         return y, X, X_train_torch, y_train_torch,X_test_torch, X_test, y_test, X_train, y_train, y_std, y_mean

@@ -108,3 +108,14 @@ class FFNN_interpretable(PyroModule):
             y = pyro.sample("obs", dist.Normal(nn_out+linear_out, 0.1), obs=y)
             
         return y
+    
+
+def model_c(X, n_cat, obs=None):
+    input_dim = X.shape[1]
+    alpha = pyro.sample("alpha", dist.Normal(torch.zeros(1, n_cat), 
+                                             5.*torch.ones(1, n_cat)).to_event())  # Prior for the bias/intercept
+    beta  = pyro.sample("beta", dist.Normal(torch.zeros(input_dim, n_cat), 
+                                            5.*torch.ones(input_dim, n_cat)).to_event()) # Priors for the regression coeffcients
+    with pyro.plate("data"):
+        y = pyro.sample("y", dist.Categorical(logits=alpha + X.matmul(beta)), obs=obs)
+    return y
