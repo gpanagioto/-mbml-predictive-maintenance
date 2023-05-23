@@ -5,11 +5,14 @@ from pyro.optim import Adam, ClippedAdam
 from pyro.infer import MCMC, NUTS, HMC, SVI, Trace_ELBO
 from src.models.models import FFNN_interpretable as modelFFNN_interpretable
 from src.models.models import FFNN as modelFFNN
+from src.models.models import RNN as modelRNN
 from pyro.infer import Predictive
 from sklearn import datasets, linear_model
 
 def train_nn(model0, X_train_torch, y_train_torch):
     if model0 == modelFFNN:
+        model = model0(n_in=X_train_torch.shape[1], n_hidden=32, n_out=1)
+    if model0 == modelRNN:
         model = model0(n_in=X_train_torch.shape[1], n_hidden=32, n_out=1)
     elif model0 == modelFFNN_interpretable:
         model = model0(n_in=X_train_torch.shape[1]-1, n_hidden=32, n_out=1)
