@@ -19,6 +19,15 @@ def test_nn_beta(model,guide,X_test_torch):
     samples = predictive(X_test_torch)
     print("Estimated beta:", samples["beta"].mean(axis=0).detach().numpy())
 
+def test_nn_c(model,guide,X_test_torch):
+    # Predict
+    predictive = pyro.infer.Predictive(model, guide=guide, num_samples=1000,return_sites=("obs", "_RETURN"))
+    samples = predictive(X_test_torch)
+    y_pred = samples["obs"].mean(axis=0).detach().numpy()
+    y_pred[y_pred<=0.5]=0
+    y_pred[y_pred>0.5]=1
+    return y_pred
+
 def test_lg_c(logreg,X_test_torch):
     # make predictions for test set
     y_hat = logreg.predict(X_test_torch)

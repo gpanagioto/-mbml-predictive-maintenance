@@ -127,13 +127,40 @@ class RNN(PyroModule):
         super(RNN, self).__init__()
         
         # Architecture
-        self.in_layer = PyroModule[nn.Linear](n_in, n_hidden, batch_first=True, num_layers=1)
+        self.in_layer = PyroModule[nn.RNN](n_in, n_hidden, batch_first=True, num_layers=1)
         self.in_layer.weight = PyroSample(dist.Normal(0., 1.).expand([n_hidden, n_in]).to_event(2))
 
-        self.h_layer = PyroModule[nn.RNN](n_hidden, n_hidden, batch_first=True, num_layers=1)
+
+        self.out_layer = PyroModule[nn.Linear](n_hidden, n_out)
+        self.out_layer.weight = PyroSample(dist.Normal(0., 1.).expand([n_out, n_hidden]).to_event(2))
+
+        # Activation functions
+        self.relu = nn.ReLU()
+        
+    def forward(self, X, y=None):
+        X,hidden = (self.in_layer(X))
+        X = self.relu(X.squeeze(0))
+        X = self.out_layer(X)
+        prediction_mean = X.squeeze(-1)
+        with pyro.plate("observations"):
+            y = pyro.sample("obs", dist.Normal(prediction_mean, 0.1), obs=y)
+            
+        return y
+    
+
+
+class FFNN_c(PyroModule):
+    def __init__(self, n_in, n_hidden, n_out):
+        super(FFNN_c, self).__init__()
+        
+        # Architecture
+        self.in_layer = PyroModule[nn.Linear](n_in, n_hidden)
+        self.in_layer.weight = PyroSample(dist.Normal(0., 1.).expand([n_hidden, n_in]).to_event(2))
+
+        self.h_layer = PyroModule[nn.Linear](n_hidden, n_hidden)
         self.h_layer.weight = PyroSample(dist.Normal(0., 1.).expand([n_hidden, n_hidden]).to_event(2))
 
-        self.h_layer = PyroModule[nn.Linear](n_hidden, n_hidden, batch_first=True, num_layers=1)
+        self.h_layer = PyroModule[nn.Linear](n_hidden, n_hidden)
         self.h_layer.weight = PyroSample(dist.Normal(0., 1.).expand([n_hidden, n_hidden]).to_event(2))
 
         self.out_layer = PyroModule[nn.Linear](n_hidden, n_out)
@@ -147,7 +174,12 @@ class RNN(PyroModule):
         X = self.tanh(self.h_layer(X))
         X = self.out_layer(X)
         prediction_mean = X.squeeze(-1)
+        """
+        with pyro.plate("data", prediction_mean.shape[0]):
+            y = pyro.sample("obs", dist.Categorical(logits=prediction_mean), obs=y)    
+        """
         with pyro.plate("observations"):
-            y = pyro.sample("obs", dist.Normal(prediction_mean, 0.1), obs=y)
-            
+            y = pyro.sample("obs", dist.Normal(prediction_mean, 0.1), obs=y)  
+        
         return y
+        
