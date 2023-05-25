@@ -6,8 +6,8 @@ import torch
 
 def compute_error(trues: np.array, predicted: np.array, threshold: int):
     if threshold:
-        predicted = predicted[np.where(trues<threshold)]
-        trues = trues[np.where(trues<threshold)[0]]
+        predicted_thres = predicted[np.where(trues<threshold)]
+        trues_thres  = trues[np.where(trues<threshold)[0]]
     else:
         print('No threshold')
         pass
@@ -16,8 +16,10 @@ def compute_error(trues: np.array, predicted: np.array, threshold: int):
     rae = np.sum(np.abs(predicted - trues)) / np.sum(np.abs(trues - np.mean(trues)))
     rmse = np.sqrt(np.mean((predicted - trues)**2))
     r2 = max(0, 1 - np.sum((trues-predicted)**2) / np.sum((trues - np.mean(trues))**2))
-
-    return corr, mae, rae, rmse, r2, trues, predicted
+    try:
+        return corr, mae, rae, rmse, r2, predicted_thres, trues_thres
+    except:
+         return corr, mae, rae, rmse, r2, predicted, trues
 
 def get_data_for_component(data, component):
     cols = ['voltmean_3h', 'rotatemean_3h',

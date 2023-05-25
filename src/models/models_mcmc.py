@@ -3,7 +3,15 @@ from sklearn.model_selection import train_test_split
 import torch
 import pyro.distributions as dist
 from pyro.infer import MCMC, NUTS
+from src.models.models import poisson_model, linear_model, heteroscedastic_model 
 
+class MCMC_model_format():
+    '''
+    defining the type of the regression
+    '''
+    poisson = {'name':"POISSON", 'model':poisson_model}
+    heterosc = {'name':"HETEROSCEDASTIC", 'model':heteroscedastic_model}
+    linear = {'name':"LINEAR", 'model':linear_model}
 
 class MCMC_regression_model():
 
@@ -51,11 +59,11 @@ class MCMC_regression_model():
         return y, X, X_train_torch, y_train_torch, X_test, y_test, X_train, y_train, y_std, y_mean
     
 
-    def pyro_inference(self, X_train_torch, y_train_torch, model):
+    def pyro_inference(self, X_train_torch, y_train_torch, model, num_samples):
 
         # Run inference in Pyro
         nuts_kernel = NUTS(model)
-        mcmc = MCMC(nuts_kernel, num_samples=1000, warmup_steps=200, num_chains=1)
+        mcmc = MCMC(nuts_kernel, num_samples=num_samples, warmup_steps=200, num_chains=1)
         mcmc.run(X_train_torch, y_train_torch)
 
         # Show summary of inference results
@@ -76,21 +84,4 @@ class MCMC_regression_model():
         preds_train = y_hat_train * y_std + y_mean
         y_true = y_test * y_std + y_mean
 
-        return preds, y_true, preds_train
-
-    def compute_error(trues: np.array, predicted: np.array, threshold: int):
-        
-        if threshold:
-            predicted = predicted[np.where(trues<threshold)]
-            trues = trues[np.where(trues<threshold)[0]]
-        else:
-            print('No threshold')
-            pass
-        
-        corr = np.corrcoef(predicted, trues)[0,1]
-        mae = np.mean(np.abs(predicted - trues))
-        rae = np.sum(np.abs(predicted - trues)) / np.sum(np.abs(trues - np.mean(trues)))
-        rmse = np.sqrt(np.mean((predicted - trues)**2))
-        r2 = max(0, 1 - np.sum((trues-predicted)**2) / np.sum((trues - np.mean(trues))**2))
- 
-        return corr, mae, rae, rmse, r2, trues, predicted
+        return preds, y_true
