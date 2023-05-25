@@ -16,7 +16,11 @@ def compute_error(trues: np.array, predicted: np.array, threshold: int):
     rae = np.sum(np.abs(predicted - trues)) / np.sum(np.abs(trues - np.mean(trues)))
     rmse = np.sqrt(np.mean((predicted - trues)**2))
     r2 = max(0, 1 - np.sum((trues-predicted)**2) / np.sum((trues - np.mean(trues))**2))
-
+    print('Correlation coefficient: {:.4f}'.format(corr))
+    print('Mean Absolute Error: {:.4f}'.format(mae))
+    print('Relative Absolute Error: {:.4f}'.format(rae))
+    print('Root Mean Squared Error: {:.4f}'.format(rmse))
+    print('R2 score: {:.4f}'.format(r2))
     return corr, mae, rae, rmse, r2, trues, predicted
 
 def get_data_for_component(data, component):
