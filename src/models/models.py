@@ -109,19 +109,6 @@ class FFNN_interpretable(PyroModule):
             
         return y
     
-
-def model_c(X, n_cat, obs=None):
-    input_dim = X.shape[1]
-    alpha = pyro.sample("alpha", dist.Normal(torch.zeros(1, n_cat), 
-                                             5.*torch.ones(1, n_cat)).to_event())  # Prior for the bias/intercept
-    beta  = pyro.sample("beta", dist.Normal(torch.zeros(input_dim, n_cat), 
-                                            5.*torch.ones(input_dim, n_cat)).to_event()) # Priors for the regression coeffcients
-    with pyro.plate("data"):
-        y = pyro.sample("y", dist.Categorical(logits=alpha + X.matmul(beta)), obs=obs)
-    return y
-
-
-
 class RNN(PyroModule):
     def __init__(self, n_in, n_hidden, n_out):
         super(RNN, self).__init__()
@@ -146,9 +133,40 @@ class RNN(PyroModule):
             y = pyro.sample("obs", dist.Normal(prediction_mean, 0.1), obs=y)
             
         return y
-    
+
+def model_cat(X, n_cat, obs=None):
+    input_dim = X.shape[1]
+    alpha = pyro.sample("alpha", dist.Normal(torch.zeros(1, n_cat), 
+                                             5.*torch.ones(1, n_cat)).to_event())  # Prior for the bias/intercept
+    beta  = pyro.sample("beta", dist.Normal(torch.zeros(input_dim, n_cat), 
+                                            5.*torch.ones(input_dim, n_cat)).to_event()) # Priors for the regression coeffcients
+    with pyro.plate("data"):
+        y = pyro.sample("y", dist.Categorical(logits=alpha + X.matmul(beta)), obs=obs)
+    return y
 
 
+def model_bin_lr(X, obs=None):
+    alpha = pyro.sample("alpha", dist.Normal(0, 5.)) # Prior for the bias/intercept
+    beta  = pyro.sample("beta", dist.Normal(torch.zeros(X.shape[1]), 
+                                            5.*torch.ones(X.shape[1])).to_event()) # Priors for the regression coeffcients
+    with pyro.plate("data"):
+        logits = alpha + X.matmul(beta)
+        y = pyro.sample("y", dist.Bernoulli(logits=logits), obs=obs)
+    return y
+
+
+
+def model_cdf(X, obs=None):
+    std_normal = torch.distributions.Normal(0,1)
+    alpha = pyro.sample("alpha", dist.Normal(0, 5.)) # Prior for the bias/intercept
+    beta  = pyro.sample("beta", dist.Normal(torch.zeros(X.shape[1]), 
+                                            5.*torch.ones(X.shape[1])).to_event()) # Priors for the regression coeffcients
+    with pyro.plate("data"):
+        probs = std_normal.cdf(alpha + X.matmul(beta))
+        y = pyro.sample("y", dist.Bernoulli(probs=probs), obs=obs)
+    return y
+
+   
 class FFNN_c(PyroModule):
     def __init__(self, n_in, n_hidden, n_out):
         super(FFNN_c, self).__init__()
