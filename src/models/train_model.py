@@ -21,7 +21,7 @@ def train_nn(model0, X_train_torch, y_train_torch):
     guide = AutoDiagonalNormal(model)
     pyro.clear_param_store()
     # Define the number of optimization steps
-    n_steps = 10000
+    n_steps = 1000#10000 kanonika!
 
     # Setup the optimizer
     adam_params = {"lr": 0.01}
@@ -47,18 +47,18 @@ def lg_c(X_train_torch, y_train_torch):
     return logreg
 
 #model using SVI
-def train_c_svi(model, X_train, y_train, n_cat):
+def train_c_svi(model, X_train, y_train, steps, lrate):
         # Define guide function
     guide = AutoMultivariateNormal(model)
-
+    
     # Reset parameter values
     pyro.clear_param_store()
 
     # Define the number of optimization steps
-    n_steps = 40000
+    n_steps = steps
 
     # Setup the optimizer
-    adam_params = {"lr": 0.001}
+    adam_params = {"lr": lrate}
     optimizer = ClippedAdam(adam_params)
 
     # Setup the inference algorithm
@@ -67,21 +67,21 @@ def train_c_svi(model, X_train, y_train, n_cat):
 
     # Do gradient steps
     for step in range(n_steps):
-        elbo = svi.step(X_train, n_cat, y_train)#y_train had -1
+        elbo = svi.step(X_train, y_train)#y_train had -1
         if step % 1000 == 0:
             print("[%d] ELBO: %.1f" % (step, elbo))
-    predictive = Predictive(model, guide=guide, num_samples=1000,return_sites=("alpha", "beta"))
-    samples = predictive(X_train, n_cat,y_train)
+    predictive = Predictive(model, guide=guide, num_samples=2000,return_sites=("alpha", "beta"))
+    samples = predictive(X_train, y_train)
     alpha_hat = samples["alpha"].detach().squeeze().mean(axis=0).numpy()
     beta_hat = samples["beta"].detach().squeeze().mean(axis=0).numpy()
     return model,guide, alpha_hat, beta_hat
 
 
 
-def train_c_mcmc(model, X_train, y_train, n_cat):
+def train_c_mcmc(model, X_train, y_train, num_samples,w_steps,chains):
     nuts_kernel = NUTS(model)
-    mcmc = MCMC(nuts_kernel, num_samples=500, warmup_steps=100, num_chains=1)
-    mcmc.run(X_train, n_cat, y_train) # Pyro accepts categories starting from 0
+    mcmc = MCMC(nuts_kernel, num_samples=num_samples, warmup_steps=w_steps, num_chains=chains)
+    mcmc.run(X_train, y_train) # Pyro accepts categories starting from 0
     samples = mcmc.get_samples()
     alpha_hat = samples["alpha"].detach().squeeze().mean(axis=0).numpy()
     beta_hat = samples["beta"].detach().squeeze().mean(axis=0).numpy()
