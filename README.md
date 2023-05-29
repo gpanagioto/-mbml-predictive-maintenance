@@ -55,3 +55,10 @@ Project Organization
 --------
 
 <p><small>Project based on the <a target="_blank" href="https://drivendata.github.io/cookiecutter-data-science/">cookiecutter data science project template</a>. #cookiecutterdatascience</small></p>
+
+
+run notebook notebooks\ima_explore.ipynb in order to obtain the hourly data
+
+notebook notebooks\training.ipynb contains preprocessing steps executed for all the models and the training of the nn networks so far
+
+python file src\models\train_model.py contains the definition of the nn(which are contained in models.py) and also their training phase
