@@ -8,38 +8,40 @@ from sklearn.metrics import confusion_matrix, recall_score, accuracy_score, prec
 
 # Make predictions for test set
 def test_nn(model,guide,X_test_torch):
-    # Predict
+    # make predictions for test set using the trained model
     predictive = pyro.infer.Predictive(model, guide=guide, num_samples=1000,return_sites=("obs", "_RETURN"))
     samples = predictive(X_test_torch)
     y_pred = samples["obs"].mean(axis=0).detach().numpy()
     return y_pred
 
 def test_nn_beta(model,guide,X_test_torch):
-    # Predict
+    # make predictions for test set using the trained model
     predictive = pyro.infer.Predictive(model, guide=guide, num_samples=1000,return_sites=("beta",))
     samples = predictive(X_test_torch)
     print("Estimated beta:", samples["beta"].mean(axis=0).detach().numpy())
 
-def test_nn_c(model,guide,X_test_torch):
-    # Predict
+def test_nn_c(model,guide,X_test_torch,thres):
+    # make predictions for test set using the trained model
     predictive = pyro.infer.Predictive(model, guide=guide, num_samples=2000,return_sites=("obs", "_RETURN"))
     samples = predictive(X_test_torch)
     y_pred = samples["obs"].mean(axis=0).detach().numpy()
-    y_pred[y_pred<=0.01]=0
-    y_pred[y_pred>0.01]=1
+    #threshold predictions
+    y_pred[y_pred<=thres]=0
+    y_pred[y_pred>thres]=1
     return y_pred
 
 def test_lg_c(logreg,X_test_torch):
-    # make predictions for test set
+    # make predictions for test set using the sklearn model
     y_hat = logreg.predict(X_test_torch)
     return y_hat
 
 
 
 def test_model_c(alpha_hat,beta_hat,X_test_torch,thres=None):
-    # make predictions for test set
+    # make predictions for test set either using threshold or argmax
     y_hat = alpha_hat + np.dot(X_test_torch, beta_hat)
     if thres:
+        thres=0.01
         y_hat[y_hat<=thres]=0
         y_hat[y_hat>thres]=1
     else: 
@@ -73,8 +75,6 @@ def plot_pred(y_pred,y_test,y_std,y_mean,threshold,start=None,end=None):
 
 
 def test_c(y_hat,y_test):
-    print("predictions:", y_hat)
-    print("true values:", y_test)
     # evaluate prediction accuracy
     print("Accuracy:", 1.0*np.sum(y_hat == y_test) / len(y_test))
 # function to evaluate predictions
@@ -82,9 +82,8 @@ def test_c(y_hat,y_test):
 def evaluate(y_test, y_hat):
     # calculate and display confusion matrix
     labels = np.unique(y_test)
-    print("labels:", labels)
     cm = confusion_matrix(y_test, y_hat, labels=labels)
-    print('Confusion matrix\n- x-axis is true labels (none, comp1, etc.)\n- y-axis is predicted labels')
+    print('Confusion matrix\n- x-axis is true labels (no failure, failure)\n- y-axis is predicted labels')
     print(cm)
     # calculate precision, recall, and F1 score
     accuracy = float(np.trace(cm)) / np.sum(cm)

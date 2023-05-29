@@ -21,7 +21,7 @@ def train_nn(model0, X_train_torch, y_train_torch):
     guide = AutoDiagonalNormal(model)
     pyro.clear_param_store()
     # Define the number of optimization steps
-    n_steps = 1000#10000 kanonika!
+    n_steps = 2000
 
     # Setup the optimizer
     adam_params = {"lr": 0.01}
@@ -41,14 +41,14 @@ def train_nn(model0, X_train_torch, y_train_torch):
 
 
 def lg_c(X_train_torch, y_train_torch):
-    # create and fit logistic regression model
+    # create and fit logistic regression model from sklearn
     logreg = linear_model.LogisticRegression(solver='lbfgs', multi_class='auto', C=1)
     logreg.fit(X_train_torch, y_train_torch)
     return logreg
 
 #model using SVI
 def train_c_svi(model, X_train, y_train, steps, lrate):
-        # Define guide function
+    # Define guide function
     guide = AutoMultivariateNormal(model)
     
     # Reset parameter values
@@ -57,7 +57,7 @@ def train_c_svi(model, X_train, y_train, steps, lrate):
     # Define the number of optimization steps
     n_steps = steps
 
-    # Setup the optimizer
+    # Set parameters of the optimizer
     adam_params = {"lr": lrate}
     optimizer = ClippedAdam(adam_params)
 
@@ -67,11 +67,13 @@ def train_c_svi(model, X_train, y_train, steps, lrate):
 
     # Do gradient steps
     for step in range(n_steps):
-        elbo = svi.step(X_train, y_train)#y_train had -1
+        elbo = svi.step(X_train, y_train)
         if step % 1000 == 0:
             print("[%d] ELBO: %.1f" % (step, elbo))
+    #use the Predictive class to extract samples from posterior:
     predictive = Predictive(model, guide=guide, num_samples=2000,return_sites=("alpha", "beta"))
     samples = predictive(X_train, y_train)
+    #extract the inferred posteriors to make predictions for the testset
     alpha_hat = samples["alpha"].detach().squeeze().mean(axis=0).numpy()
     beta_hat = samples["beta"].detach().squeeze().mean(axis=0).numpy()
     return model,guide, alpha_hat, beta_hat
@@ -79,9 +81,13 @@ def train_c_svi(model, X_train, y_train, steps, lrate):
 
 
 def train_c_mcmc(model, X_train, y_train, num_samples,w_steps,chains):
+    # Initialize NUTS kernel for the MCMC sampler
     nuts_kernel = NUTS(model)
+    # create MCMC inference object with the needed paramters
     mcmc = MCMC(nuts_kernel, num_samples=num_samples, warmup_steps=w_steps, num_chains=chains)
-    mcmc.run(X_train, y_train) # Pyro accepts categories starting from 0
+    # run the inference
+    mcmc.run(X_train, y_train)
+    # extract the inferred posteriors to make predictions for the testset
     samples = mcmc.get_samples()
     alpha_hat = samples["alpha"].detach().squeeze().mean(axis=0).numpy()
     beta_hat = samples["beta"].detach().squeeze().mean(axis=0).numpy()
