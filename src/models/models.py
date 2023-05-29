@@ -3,6 +3,7 @@ import torch
 import pyro.distributions as dist
 from pyro.nn import PyroModule, PyroSample
 import torch.nn as nn
+from torch.nn.functional import log_softmax, sigmoid
 
 def linear_model(X, obs=None):
         
@@ -193,14 +194,16 @@ class FFNN_c(PyroModule):
         X = self.relu(self.h_layer(X))
         X = self.relu(self.h_layer1(X))
         X = self.out_layer(X)
-        prediction_mean = X.squeeze(-1)
+        prediction_mean = sigmoid(X).squeeze(-1)
         #not enough memory for this
         """
         with pyro.plate("data", X.shape[0]):
             y = pyro.sample("obs", dist.Categorical(logits=prediction_mean), obs=y)    
-        """
+        
         with pyro.plate("observations"):
             y = pyro.sample("obs", dist.Normal(prediction_mean, 0.1), obs=y)  
-        
+        """
+        with pyro.plate("observations"):
+            y = pyro.sample("obs", dist.Bernoulli(probs=prediction_mean), obs=y)
         return y
         

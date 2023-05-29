@@ -22,14 +22,20 @@ def compute_error(trues: np.array, predicted: np.array, threshold: int):
          return corr, mae, rae, rmse, r2, predicted, trues
 
 def get_data_for_component(data, component):
-    cols = ['voltmean_3h', 'rotatemean_3h',
-       'pressuremean_3h', 'vibrationmean_3h', 'voltsd_3h', 'rotatesd_3h',
-       'pressuresd_3h', 'vibrationsd_3h', 'voltmean_24h', 'rotatemean_24h',
-       'pressuremean_24h', 'vibrationmean_24h', 'voltsd_24h', 'rotatesd_24h',
-       'pressuresd_24h', 'vibrationsd_24h', 'error1count', 'error2count',
-       'error3count', 'error4count', 'error5count','age',
-       'model_model1', 'model_model2', 'model_model3', 'model_model4','machineID', component]
+    components_cols = ['comp1_maint', 'comp2_maint', 'comp3_maint', 'comp4_maint',
+       'failure_comp1', 'failure_comp2', 'failure_comp3', 'failure_comp4',
+       'comp1_life', 'comp2_life', 'comp3_life', 'comp4_life']
+    
+    cols = ['machineID', 'voltmean_3h', 'rotatemean_3h',
+                'pressuremean_3h', 'vibrationmean_3h', 'voltsd_3h', 'rotatesd_3h',
+                'pressuresd_3h', 'vibrationsd_3h', 'voltmean_24h', 'rotatemean_24h',
+                'pressuremean_24h', 'vibrationmean_24h', 'voltsd_24h', 'rotatesd_24h',
+                'pressuresd_24h', 'vibrationsd_24h', 'error1count', 'error2count',
+                'error3count', 'error4count', 'error5count','age',
+                'model_model1', 'model_model2', 'model_model3', 'model_model4'] + [word for word in components_cols if str(component) in ([*word]) and 'life' not in word.split('_')]
+
     return data[cols]
+
 
 
 def preprocess(X_init,test_size,classi=False,splitting=True):
